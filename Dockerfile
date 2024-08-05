@@ -5,7 +5,7 @@ FROM python:3.12.0
 RUN pip install poetry
 
 # Copie o pyproject.toml e o poetry.lock para o diretório de trabalho
-COPY . /app
+COPY . .
 
 # Crie o diretório de trabalho e defina-o
 WORKDIR /src
