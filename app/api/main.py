@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from satelite.get_satelite_img import app as satellite_app
-from weather.api import app as weather_app
+from app.api.satelite.get_satelite_img import app as satellite_app
+from app.api.weather.api import app as weather_app
 
 app = FastAPI()
 
