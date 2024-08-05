@@ -11,7 +11,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock /app/
 
 # Instale as dependências do projeto usando o Poetry
-RUN poetry config virtualenvs.create false && poetry install --no-root
+RUN poetry config virtualenvs.create false && poetry install
 
 # Copie o restante do código da aplicação para o diretório de trabalho
 COPY . .
