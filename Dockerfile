@@ -5,7 +5,7 @@ FROM python:3.12.0
 RUN pip install poetry
 
 # Copia o pyproject.toml e o poetry.lock para o diretório de trabalho
-COPY pyproject.toml poetry.lock /src/
+COPY pyproject.toml poetry.lock /app/
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
