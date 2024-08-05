@@ -1,14 +1,24 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from geopy.geocoders import Nominatim
 import os
 import requests
+from dotenv import load_dotenv
+import logging
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
 
 app = FastAPI()
-geolocator = Nominatim(user_agent="geoapiExercises")
+geolocator = Nominatim(user_agent="your_app_name")
 
 def create_data_folder():
     if not os.path.exists('data'):
         os.makedirs('data')
+    logger.info("Pasta 'data' criada/verificada com sucesso.")
 
 def get_sentinel_data(instance_id, latitude, longitude, count=1, dim=0.02):
     """
@@ -22,9 +32,8 @@ def get_sentinel_data(instance_id, latitude, longitude, count=1, dim=0.02):
     Returns:
         None
     Raises:
-        None
+        HTTPException: If the API request fails.
     """
-    # Rest of the code...
     url = f"https://services.sentinel-hub.com/ogc/wms/{instance_id}"
     params = {
         "SERVICE": "WMS",
@@ -36,45 +45,65 @@ def get_sentinel_data(instance_id, latitude, longitude, count=1, dim=0.02):
         "WIDTH": "512",
         "HEIGHT": "512",
         "CRS": "EPSG:4326",
-        "DIM": dim
+        "BBOX": f"{longitude-dim},{latitude-dim},{longitude+dim},{latitude+dim}"
     }
-    
+    headers = {
+        "Authorization": f"Bearer {instance_id}"
+    }
+
     create_data_folder()
 
-    for i in range(count):
-        params["BBOX"] = f"{longitude-dim},{latitude-dim},{longitude+dim},{latitude+dim}"
-        response = requests.get(url, params=params)
-        
+    for i in range(min(count, 5)):
+        logger.info(f"Enviando requisição {i+1} com os parâmetros: {params}")
+        response = requests.get(url, params=params, headers=headers)
+
         if response.status_code == 200:
             file_path = f"data/satellite_image_{i+1}.jpg"
             with open(file_path, "wb") as f:
                 f.write(response.content)
-            print(f"Imagem {i+1} salva como {file_path}")
+            logger.info(f"Imagem {i+1} salva como {file_path}")
         else:
-            print(f"Erro: {response.status_code}, {response.text}")
+            error_msg = f"Erro: {response.status_code}, {response.text}"
+            logger.error(f"Detalhes do erro: {response.text}")
+            logger.error(f"Headers da resposta: {response.headers}")
+            raise HTTPException(status_code=response.status_code, detail=error_msg)
 
 @app.get("/get-data/{country}/{state}/{city}")
-async def get_data(country: str, state: str, city: str):
+async def get_data(country: str, state: str, city: str, count: int = Query(1, ge=1, le=5)):
     try:
-        # Geocode the location
+        logger.info(f"Geocodificando localização: {city}, {state}, {country}")
         loc = geolocator.geocode(f"{city}, {state}, {country}")
         if not loc:
-            raise HTTPException(status_code=404, detail="Location not found")
+            error_msg = "Localização não encontrada"
+            logger.error(error_msg)
+            raise HTTPException(status_code=404, detail=error_msg)
 
         latitude = loc.latitude
         longitude = loc.longitude
 
-        # Sentinel instance ID (substitua pelo seu ID real)
-        instance_id = "2e529581-603b-45c1-8c2b-c73f97acd1d1"
-        
+        logger.info(f"Localização geocodificada: latitude={latitude}, longitude={longitude}")
+
+        # Sentinel instance ID from environment variable
+        instance_id = os.getenv("INSTANCE_ID")
+        if not instance_id:
+            error_msg = "ID da Instância não configurado"
+            logger.error(error_msg)
+            raise HTTPException(status_code=500, detail=error_msg)
+
+        logger.info(f"Usando INSTANCE_ID: {instance_id}")
+
         # Get sentinel data
-        get_sentinel_data(instance_id, latitude, longitude)
-        
-        return {"message": "Data fetched and images saved successfully."}
+        get_sentinel_data(instance_id, latitude, longitude, count)
+
+        success_msg = "Dados buscados e imagens salvas com sucesso."
+        logger.info(success_msg)
+        return {"message": success_msg}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Erro no processamento: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 # Executar o servidor
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
