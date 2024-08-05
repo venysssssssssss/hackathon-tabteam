@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
 
+# Defina um User-Agent personalizado
 app = FastAPI()
-geolocator = Nominatim(user_agent="your_app_name")
+geolocator = Nominatim(user_agent="WeatherApp/1.0")
 
 def create_data_folder():
     if not os.path.exists('data'):
@@ -21,19 +22,6 @@ def create_data_folder():
     logger.info("Pasta 'data' criada/verificada com sucesso.")
 
 def get_sentinel_data(instance_id, latitude, longitude, count=1, dim=0.02):
-    """
-    Retrieves satellite data from the Sentinel Hub API and saves the images locally.
-    Args:
-        instance_id (str): The instance ID for accessing the Sentinel Hub API.
-        latitude (float): The latitude coordinate for the desired location.
-        longitude (float): The longitude coordinate for the desired location.
-        count (int, optional): The number of satellite images to retrieve. Defaults to 1.
-        dim (float, optional): The dimension of the bounding box around the location. Defaults to 0.02.
-    Returns:
-        None
-    Raises:
-        HTTPException: If the API request fails.
-    """
     url = f"https://services.sentinel-hub.com/ogc/wms/{instance_id}"
     params = {
         "SERVICE": "WMS",
@@ -102,8 +90,3 @@ async def get_data(country: str, state: str, city: str, count: int = Query(1, ge
         error_msg = f"Erro no processamento: {str(e)}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
-
-# Executar o servidor
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
