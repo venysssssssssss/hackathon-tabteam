@@ -4,14 +4,14 @@ FROM python:3.12.0
 # Instale o Poetry
 RUN pip install poetry
 
-# Crie o diretório de trabalho e defina-o
-WORKDIR /app
-
 # Copie o pyproject.toml e o poetry.lock para o diretório de trabalho
 COPY . /app
 
+# Crie o diretório de trabalho e defina-o
+WORKDIR /app
+
 # Instale as dependências do projeto usando o Poetry
-RUN poetry config virtualenvs.create false && poetry install
+RUN poetry install --no-root
 
 # Copie o restante do código da aplicação para o diretório de trabalho
 COPY . .
