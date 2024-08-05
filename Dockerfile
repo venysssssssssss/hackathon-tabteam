@@ -8,7 +8,7 @@ RUN pip install poetry
 WORKDIR /app
 
 # Copie o pyproject.toml e o poetry.lock para o diretório de trabalho
-COPY pyproject.toml poetry.lock /app/
+COPY . /app
 
 # Instale as dependências do projeto usando o Poetry
 RUN poetry config virtualenvs.create false && poetry install
