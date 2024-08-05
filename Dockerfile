@@ -8,7 +8,7 @@ RUN pip install poetry
 COPY . /app
 
 # Crie o diretório de trabalho e defina-o
-WORKDIR /app
+WORKDIR /src
 
 # Instale as dependências do projeto usando o Poetry
 RUN poetry install --no-root
